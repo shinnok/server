@@ -1374,12 +1374,13 @@ void THD::init(bool skip_lock)
 }
 
 
-bool THD::restore_from_local_lex_to_old_lex(LEX *oldlex)
+bool THD::restore_from_local_lex_to_old_lex(LEX *oldlex, LEX *oldstmtlex)
 {
   DBUG_ASSERT(lex->sphead);
   if (lex->sphead->merge_lex(this, oldlex, lex))
     return true;
   lex= oldlex;
+  stmt_lex= oldstmtlex;
   return false;
 }
 
@@ -3798,6 +3799,7 @@ Statement::Statement(LEX *lex_arg, MEM_ROOT *mem_root_arg,
   id(id_arg),
   column_usage(MARK_COLUMNS_READ),
   lex(lex_arg),
+  stmt_lex(lex_arg),
   db(null_clex_str)
 {
   name= null_clex_str;

@@ -225,7 +225,7 @@ ERROR HY000: The target table t1 of the UPDATE is not updatable
 delete from (select * from t1);
 ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '(select * from t1)' at line 1
 insert into  (select * from t1) values (5);
-ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '(select * from t1) values (5)' at line 1
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'select * from t1) values (5)' at line 1
 drop table t1;
 create table t1 (E1 INTEGER UNSIGNED NOT NULL, E2 INTEGER UNSIGNED NOT NULL, E3 INTEGER UNSIGNED NOT NULL, PRIMARY KEY(E1)
 );

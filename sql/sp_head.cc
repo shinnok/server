@@ -317,7 +317,7 @@ sp_get_flags_for_command(LEX *lex)
        - EXPLAIN DELETE ...
        - ANALYZE DELETE ...
     */
-    if (lex->select_lex.item_list.is_empty() &&
+    if (lex->first_select_lex()->item_list.is_empty() &&
         !lex->describe && !lex->analyze_stmt)
       flags= 0;
     else
@@ -556,6 +556,7 @@ sp_head::sp_head(sp_package *parent, const Sp_handler *sph)
   m_backpatch_goto.empty();
   m_cont_backpatch.empty();
   m_lex.empty();
+  m_stmt_lex.empty();
   my_init_dynamic_array(&m_instr, sizeof(sp_instr *), 16, 8, MYF(0));
   my_hash_init(&m_sptabs, system_charset_info, 0, 0, 0, sp_table_key, 0, 0);
   my_hash_init(&m_sroutines, system_charset_info, 0, 0, 0, sp_sroutine_key,
@@ -830,13 +831,15 @@ sp_head::~sp_head()
     THD::lex. It is safe to not update LEX::ptr because further query
     string parsing and execution will be stopped anyway.
   */
+  DBUG_ASSERT(m_lex.elements == m_stmt_lex.elements);
   while ((lex= (LEX *)m_lex.pop()))
   {
     THD *thd= lex->thd;
     thd->lex->sphead= NULL;
     lex_end(thd->lex);
     delete thd->lex;
-    thd->lex= thd->stmt_lex= lex;
+    thd->lex= lex;
+    thd->stmt_lex= m_stmt_lex.pop();
   }
 
   my_hash_free(&m_sptabs);
@@ -2285,6 +2288,7 @@ sp_head::execute_procedure(THD *thd, List<Item> *args)
   if (!err_status)
   {
     err_status= execute(thd, TRUE);
+    DBUG_PRINT("info", ("execute returned %d", (int) err_status));
   }
 
   if (save_log_general)
@@ -2386,10 +2390,11 @@ sp_head::reset_lex(THD *thd, sp_lex_local *sublex)
 {
   DBUG_ENTER("sp_head::reset_lex");
   LEX *oldlex= thd->lex;
+  LEX *oldstmtlex= thd->stmt_lex;
 
-  thd->set_local_lex(sublex);
+  thd->set_local_lex(sublex, sublex);
 
-  DBUG_RETURN(m_lex.push_front(oldlex));
+  DBUG_RETURN(m_lex.push_front(oldlex) || m_stmt_lex.push_front(oldstmtlex));
 }
 
 

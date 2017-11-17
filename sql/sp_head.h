@@ -589,10 +589,12 @@ public:
   {
     DBUG_ENTER("sp_head::restore_lex");
     LEX *oldlex= (LEX *) m_lex.pop();
+    LEX *oldstmtlex= (LEX *) m_stmt_lex.pop();
     if (!oldlex)
       DBUG_RETURN(false); // Nothing to restore
     LEX *sublex= thd->lex;
-    if (thd->restore_from_local_lex_to_old_lex(oldlex))// This restores thd->lex
+    // This restores thd->lex and thd->stmt_lex
+    if (thd->restore_from_local_lex_to_old_lex(oldlex, oldstmtlex))
       DBUG_RETURN(true);
     if (!sublex->sp_lex_in_use)
     {
@@ -858,6 +860,7 @@ protected:
 
   sp_pcontext *m_pcont;		///< Parse context
   List<LEX> m_lex;		///< Temp. store for the other lex
+  List<LEX> m_stmt_lex;		///< Temp. store for the other stmt_lex
   DYNAMIC_ARRAY m_instr;	///< The "instructions"
 
   enum backpatch_instr_type { GOTO, CPOP, HPOP };
