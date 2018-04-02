@@ -3841,7 +3841,7 @@ int select_insert::send_data(List<Item> &values)
     table->auto_increment_field_not_null= FALSE;
     DBUG_RETURN(1);
   }
-  table->vers_write= versioned_write;
+  table->vers_write= versioned_write; // XXX WTF?
   if (table_list)                               // Not CREATE ... SELECT
   {
     switch (table_list->view_check_option(thd, info.ignore)) {
@@ -4139,7 +4139,7 @@ TABLE *select_create::create_table_from_items(THD *thd,
   /* Add selected items to field list */
   List_iterator_fast<Item> it(*items);
   Item *item;
-  DBUG_ENTER("create_table_from_items");
+  DBUG_ENTER("select_create::create_table_from_items");
 
   tmp_table.s= &share;
   init_tmp_table_share(thd, &share, "", 0, "", "");
@@ -4151,6 +4151,10 @@ TABLE *select_create::create_table_from_items(THD *thd,
 
   if (!opt_explicit_defaults_for_timestamp)
     promote_first_timestamp_column(&alter_info->create_list);
+
+  if (create_info->vers_fix_system_fields(thd, alter_info, *create_table,
+                                          true, &versioned_write))
+    DBUG_RETURN(NULL);
 
   while ((item=it++))
   {
@@ -4188,11 +4192,8 @@ TABLE *select_create::create_table_from_items(THD *thd,
     alter_info->create_list.push_back(cr_field, thd->mem_root);
   }
 
-  if (create_info->vers_fix_system_fields(thd, alter_info, *create_table,
-    select_tables, items, &versioned_write))
-  {
+  if (create_info->vers_check_system_fields(thd, alter_info, *create_table))
     DBUG_RETURN(NULL);
-  }
 
   DEBUG_SYNC(thd,"create_table_select_before_create");
 
@@ -4436,11 +4437,16 @@ select_create::prepare(List<Item> &_values, SELECT_LEX_UNIT *u)
   }
 
   /* First field to copy */
-  field= table->field+table->s->fields - values.elements;
+  field= table->field+table->s->fields;
 
   /* Mark all fields that are given values */
-  for (Field **f= field ; *f ; f++)
-    bitmap_set_bit(table->write_set, (*f)->field_index);
+  for (uint n= values.elements; n; )
+  {
+    if ((*--field)->invisible >= INVISIBLE_SYSTEM)
+      continue;
+    n--;
+    bitmap_set_bit(table->write_set, (*field)->field_index);
+  }
 
   table->next_number_field=table->found_next_number_field;
 
