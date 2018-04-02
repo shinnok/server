@@ -73,12 +73,19 @@ class sequence_definition;
 */
 enum enum_alter_inplace_result {
   HA_ALTER_ERROR,
+  HA_ALTER_INPLACE_COPY_NO_LOCK,
+  HA_ALTER_INPLACE_COPY_LOCK,
+  HA_ALTER_INPLACE_NOCOPY_LOCK,
+  HA_ALTER_INPLACE_NOCOPY_NO_LOCK,
+  HA_ALTER_INPLACE_INSTANT,
   HA_ALTER_INPLACE_NOT_SUPPORTED,
   HA_ALTER_INPLACE_EXCLUSIVE_LOCK,
-  HA_ALTER_INPLACE_SHARED_LOCK_AFTER_PREPARE,
   HA_ALTER_INPLACE_SHARED_LOCK,
-  HA_ALTER_INPLACE_NO_LOCK_AFTER_PREPARE,
-  HA_ALTER_INPLACE_NO_LOCK
+  HA_ALTER_INPLACE_NO_LOCK,
+  HA_ALTER_INPLACE_SHARED_LOCK_AFTER_PREPARE =
+    HA_ALTER_INPLACE_COPY_LOCK,
+  HA_ALTER_INPLACE_NO_LOCK_AFTER_PREPARE =
+    HA_ALTER_INPLACE_COPY_NO_LOCK
 };
 
 /* Bits in table_flags() to show what database can do */
@@ -2359,7 +2366,7 @@ public:
                           replace not_supported with.
   */
   void report_unsupported_error(const char *not_supported,
-                                const char *try_instead);
+                                const char *try_instead) const;
 };
 
 
