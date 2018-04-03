@@ -246,6 +246,14 @@ IF(CMAKE_SYSTEM_NAME MATCHES "SunOS" AND CMAKE_SYSTEM_PROCESSOR MATCHES "i386")
   ENDIF()
 ENDIF()
 
+# fused multiply add
+MY_CHECK_CXX_COMPILER_FLAG("-ffp-contract=off")
+IF(have_CXX__ffp_contract_off AND NOT CMAKE_CXX_FLAGS MATCHES "-ffp-contract")
+  ADD_COMPILE_FLAGS(${CMAKE_CURRENT_SOURCE_DIR}/gis/gis0geo.cc COMPILE_FLAGS
+    -ffp-contract=off
+  )
+ENDIF()
+
 IF(MSVC)
   # Avoid "unreferenced label" warning in generated file
   GET_FILENAME_COMPONENT(_SRC_DIR ${CMAKE_CURRENT_LIST_FILE} PATH)
