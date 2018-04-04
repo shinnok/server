@@ -2248,7 +2248,7 @@ enum_nested_loop_state JOIN_CACHE::join_matching_records(bool skip_last)
     goto finish2;
 
   /* Prepare to retrieve all records of the joined table */
-  if ((error= join_tab_scan->open()))
+  if (unlikely((error= join_tab_scan->open())))
   { 
     /* 
       TODO: if we get here, we will assert in net_send_statement(). Add test
@@ -2411,7 +2411,7 @@ enum_nested_loop_state JOIN_CACHE::generate_full_extensions(uchar *rec_ptr)
       DBUG_RETURN(rc);
     }
   }
-  else if (join->thd->is_error())
+  else if (unlikely(join->thd->is_error()))
     rc= NESTED_LOOP_ERROR;
   DBUG_RETURN(rc);
 }

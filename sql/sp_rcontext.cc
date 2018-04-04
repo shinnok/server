@@ -486,14 +486,14 @@ bool sp_rcontext::handle_sql_condition(THD *thd,
     handlers from this context are applicable: try to locate one
     in the outer scope.
   */
-  if (thd->is_fatal_sub_stmt_error && m_in_sub_stmt)
+  if (unlikely(thd->is_fatal_sub_stmt_error) && m_in_sub_stmt)
     DBUG_RETURN(false);
 
   Diagnostics_area *da= thd->get_stmt_da();
   const sp_handler *found_handler= NULL;
   const Sql_condition *found_condition= NULL;
 
-  if (thd->is_error())
+  if (unlikely(thd->is_error()))
   {
     found_handler=
       cur_spi->m_ctx->find_handler(da->get_error_condition_identity());

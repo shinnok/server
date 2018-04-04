@@ -376,7 +376,7 @@ SORT_INFO *filesort(THD *thd, TABLE *table, Filesort *filesort,
     }
   }
   tracker->report_merge_passes_at_end(thd->query_plan_fsort_passes);
-  if (error)
+  if (unlikely(error))
   {
     int kill_errno= thd->killed_errno();
     DBUG_ASSERT(thd->is_error() || kill_errno || thd->killed == ABORT_QUERY);
@@ -414,7 +414,7 @@ SORT_INFO *filesort(THD *thd, TABLE *table, Filesort *filesort,
               (longlong) sort->found_rows));
   MYSQL_FILESORT_DONE(error, num_rows);
 
-  if (error)
+  if (unlikely(error))
   {
     delete sort;
     sort= 0;
@@ -742,7 +742,7 @@ static ha_rows find_all_keys(THD *thd, Sort_param *param, SQL_SELECT *select,
     next_pos=(uchar*) 0;			/* Find records in sequence */
     DBUG_EXECUTE_IF("bug14365043_1",
                     DBUG_SET("+d,ha_rnd_init_fail"););
-    if (file->ha_rnd_init_with_error(1))
+    if (unlikely(file->ha_rnd_init_with_error(1)))
       DBUG_RETURN(HA_POS_ERROR);
     file->extra_opt(HA_EXTRA_CACHE, thd->variables.read_buff_size);
   }
@@ -779,7 +779,7 @@ static ha_rows find_all_keys(THD *thd, Sort_param *param, SQL_SELECT *select,
   {
     if (quick_select)
     {
-      if ((error= select->quick->get_next()))
+      if (unlikely((error= select->quick->get_next())))
         break;
       file->position(sort_form->record[0]);
       DBUG_EXECUTE_IF("debug_filesort", dbug_print_record(sort_form, TRUE););
@@ -793,14 +793,14 @@ static ha_rows find_all_keys(THD *thd, Sort_param *param, SQL_SELECT *select,
 	  my_store_ptr(ref_pos,ref_length,record); // Position to row
 	  record+= sort_form->s->db_record_offset;
 	}
-	else if (!error)
+	else if (likely(!error))
 	  file->position(sort_form->record[0]);
       }
-      if (error && error != HA_ERR_RECORD_DELETED)
+      if (unlikely(error && error != HA_ERR_RECORD_DELETED))
 	break;
     }
 
-    if (thd->check_killed())
+    if (unlikely(thd->check_killed()))
     {
       DBUG_PRINT("info",("Sort killed by user"));
       if (!quick_select)
@@ -812,7 +812,7 @@ static ha_rows find_all_keys(THD *thd, Sort_param *param, SQL_SELECT *select,
     }
 
     bool write_record= false;
-    if (error == 0)
+    if (likely(error == 0))
     {
       param->examined_rows++;
       if (select && select->cond)
@@ -865,7 +865,7 @@ static ha_rows find_all_keys(THD *thd, Sort_param *param, SQL_SELECT *select,
     }
 
     /* It does not make sense to read more keys in case of a fatal error */
-    if (thd->is_error())
+    if (unlikely(thd->is_error()))
       break;
 
     /*
@@ -885,11 +885,11 @@ static ha_rows find_all_keys(THD *thd, Sort_param *param, SQL_SELECT *select,
   /* Signal we should use orignal column read and write maps */
   sort_form->column_bitmaps_set(save_read_set, save_write_set, save_vcol_set);
 
-  if (thd->is_error())
+  if (unlikely(thd->is_error()))
     DBUG_RETURN(HA_POS_ERROR);
 
   DBUG_PRINT("test",("error: %d  indexpos: %d",error,indexpos));
-  if (error != HA_ERR_END_OF_FILE)
+  if (unlikely(error != HA_ERR_END_OF_FILE))
   {
     file->print_error(error,MYF(ME_ERROR | ME_WAITTANG)); // purecov: inspected
     DBUG_RETURN(HA_POS_ERROR);			/* purecov: inspected */
@@ -1649,7 +1649,7 @@ int merge_buffers(Sort_param *param, IO_CACHE *from_file,
     strpos+=
       (uint) (error= (int) read_to_buffer(from_file, buffpek, rec_length));
 
-    if (error == -1)
+    if (unlikely(error == -1))
       goto err;					/* purecov: inspected */
     buffpek->max_keys= buffpek->mem_count;	// If less data in buffers than expected
     queue_insert(&queue, (uchar*) buffpek);
@@ -1670,8 +1670,8 @@ int merge_buffers(Sort_param *param, IO_CACHE *from_file,
     buffpek->key+= rec_length;
     if (! --buffpek->mem_count)
     {
-      if (!(error= (int) read_to_buffer(from_file, buffpek,
-                                        rec_length)))
+      if (likely(!(error= (int) read_to_buffer(from_file, buffpek,
+                                               rec_length))))
       {
         (void) queue_remove_top(&queue);
         reuse_freed_buff(&queue, buffpek, rec_length);
@@ -1747,8 +1747,8 @@ int merge_buffers(Sort_param *param, IO_CACHE *from_file,
       buffpek->key+= rec_length;
       if (! --buffpek->mem_count)
       {
-        if (!(error= (int) read_to_buffer(from_file, buffpek,
-                                          rec_length)))
+        if (likely(!(error= (int) read_to_buffer(from_file, buffpek,
+                                                 rec_length))))
         {
           (void) queue_remove_top(&queue);
           reuse_freed_buff(&queue, buffpek, rec_length);

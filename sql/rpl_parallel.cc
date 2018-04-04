@@ -337,7 +337,7 @@ do_gco_wait(rpl_group_info *rgi, group_commit_orderer *gco,
     thd->set_time_for_next_stage();
     do
     {
-      if (thd->check_killed() && !rgi->worker_error)
+      if (unlikely(thd->check_killed()) && !rgi->worker_error)
       {
         DEBUG_SYNC(thd, "rpl_parallel_start_waiting_for_prior_killed");
         thd->clear_error();
@@ -862,13 +862,13 @@ do_retry:
 
       if (ev)
         break;
-      if (rlog.error < 0)
+      if (unlikely(rlog.error < 0))
       {
         errmsg= "slave SQL thread aborted because of I/O error";
         err= 1;
         goto check_retry;
       }
-      if (rlog.error > 0)
+      if (unlikely(rlog.error > 0))
       {
         sql_print_error("Slave SQL thread: I/O error reading "
                         "event(errno: %d  cur_log->error: %d)",
@@ -1301,7 +1301,7 @@ handle_rpl_parallel_thread(void *arg)
         delete_or_keep_event_post_apply(rgi, event_type, qev->ev);
         DBUG_EXECUTE_IF("rpl_parallel_simulate_temp_err_gtid_0_x_100",
                         err= dbug_simulate_tmp_error(rgi, thd););
-        if (err)
+        if (unlikely(err))
         {
           convert_kill_to_deadlock_error(rgi);
           if (has_temporary_error(thd) && slave_trans_retries > 0)

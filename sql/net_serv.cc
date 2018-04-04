@@ -620,7 +620,7 @@ net_real_write(NET *net,const uchar *packet, size_t len)
   query_cache_insert(net->thd, (char*) packet, len, net->pkt_nr);
 #endif
 
-  if (net->error == 2)
+  if (unlikely(net->error == 2))
     DBUG_RETURN(-1);				/* socket can't be used */
 
   net->reading_or_writing=2;
@@ -1246,13 +1246,13 @@ my_net_read_packet_reallen(NET *net, my_bool read_from_server, ulong* reallen)
 	total_length += len;
 	len = my_real_read(net,&complen, 0);
       } while (len == MAX_PACKET_LENGTH);
-      if (len != packet_error)
+      if (likely(len != packet_error))
 	len+= total_length;
       net->where_b = save_pos;
     }
 
     net->read_pos = net->buff + net->where_b;
-    if (len != packet_error)
+    if (likely(len != packet_error))
     {
       net->read_pos[len]=0;		/* Safeguard for mysql_use_result */
       *reallen = (ulong)len;

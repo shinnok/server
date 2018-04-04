@@ -295,7 +295,7 @@ longlong Item::val_int_signed_typecast_from_str()
 {
   int error;
   longlong value= val_int_from_str(&error);
-  if (!null_value && value < 0 && error == 0)
+  if (unlikely(!null_value && value < 0 && error == 0))
     push_note_converted_to_negative_complement(current_thd);
   return value;
 }
@@ -305,7 +305,7 @@ longlong Item::val_int_unsigned_typecast_from_str()
 {
   int error;
   longlong value= val_int_from_str(&error);
-  if (!null_value && error < 0)
+  if (unlikely(!null_value && error < 0))
     push_note_converted_to_positive_complement(current_thd);
   return value;
 }
@@ -1389,7 +1389,7 @@ Item *Item::const_charset_converter(THD *thd, CHARSET_INFO *tocs,
                                   collation.derivation,
                                   collation.repertoire));
 
-  if (!conv || (conv_errors && lossless))
+  if (unlikely(!conv || (conv_errors && lossless)))
   {
     /*
       Safe conversion is not possible (or EOM).
@@ -2760,13 +2760,13 @@ bool Type_std_attributes::agg_item_set_converter(const DTCollation &coll,
 Item* Item_func_or_sum::build_clone(THD *thd)
 {
   Item_func_or_sum *copy= (Item_func_or_sum *) get_copy(thd);
-  if (!copy)
+  if (unlikely(!copy))
     return 0;
   if (arg_count > 2)
   {
     copy->args= 
       (Item**) alloc_root(thd->mem_root, sizeof(Item*) * arg_count);
-    if (!copy->args)
+    if (unlikely(!copy->args))
       return 0;
   }
   else if (arg_count > 0)
@@ -2863,7 +2863,7 @@ Item_sp::sp_check_access(THD *thd)
 */
 bool Item_sp::execute(THD *thd, bool *null_value, Item **args, uint arg_count)
 {
-  if (execute_impl(thd, args, arg_count))
+  if (unlikely(execute_impl(thd, args, arg_count)))
   {
     *null_value= 1;
     context->process_error(thd);
@@ -2905,7 +2905,7 @@ Item_sp::execute_impl(THD *thd, Item **args, uint arg_count)
     thd->security_ctx= context->security_ctx;
   }
 
-  if (sp_check_access(thd))
+  if (unlikely(sp_check_access(thd)))
   {
     thd->security_ctx= save_security_ctx;
     DBUG_RETURN(TRUE);
@@ -2916,10 +2916,10 @@ Item_sp::execute_impl(THD *thd, Item **args, uint arg_count)
     statement-based replication (SBR) is active.
   */
 
-  if (!m_sp->detistic() && !trust_function_creators &&
-      (access == SP_CONTAINS_SQL || access == SP_MODIFIES_SQL_DATA) &&
-      (mysql_bin_log.is_open() &&
-       thd->variables.binlog_format == BINLOG_FORMAT_STMT))
+  if (unlikely(!m_sp->detistic() && !trust_function_creators &&
+               (access == SP_CONTAINS_SQL || access == SP_MODIFIES_SQL_DATA) &&
+               (mysql_bin_log.is_open() &&
+                thd->variables.binlog_format == BINLOG_FORMAT_STMT)))
   {
     my_error(ER_BINLOG_UNSAFE_ROUTINE, MYF(0));
     thd->security_ctx= save_security_ctx;
@@ -3049,9 +3049,10 @@ Item_sp::init_result_field(THD *thd, uint max_length, uint maybe_null,
 Item* Item_ref::build_clone(THD *thd)
 {
   Item_ref *copy= (Item_ref *) get_copy(thd);
-  if (!copy ||
-      !(copy->ref= (Item**) alloc_root(thd->mem_root, sizeof(Item*))) ||
-      !(*copy->ref= (* ref)->build_clone(thd)))
+  if (unlikely(!copy) ||
+      unlikely(!(copy->ref= (Item**) alloc_root(thd->mem_root,
+                                                sizeof(Item*)))) ||
+      unlikely(!(*copy->ref= (* ref)->build_clone(thd))))
     return 0;
   return copy;
 }
@@ -4272,7 +4273,7 @@ bool Item_param::set_str(const char *str, ulong length,
     been written to the binary log.
   */
   uint dummy_errors;
-  if (value.m_string.copy(str, length, fromcs, tocs, &dummy_errors))
+  if (unlikely(value.m_string.copy(str, length, fromcs, tocs, &dummy_errors)))
     DBUG_RETURN(TRUE);
   /*
     Set str_value_ptr to make sure it's in sync with str_value.
@@ -6664,7 +6665,7 @@ String *Item::check_well_formed_result(String *str, bool send_error)
   CHARSET_INFO *cs= str->charset();
   uint wlen= str->well_formed_length();
   null_value= false;
-  if (wlen < str->length())
+  if (unlikely(wlen < str->length()))
   {
     THD *thd= current_thd;
     char hexbuf[7];
@@ -6703,9 +6704,10 @@ String_copier_for_item::copy_with_warn(CHARSET_INFO *dstcs, String *dst,
                                        CHARSET_INFO *srccs, const char *src,
                                        uint32 src_length, uint32 nchars)
 {
-  if ((dst->copy(dstcs, srccs, src, src_length, nchars, this)))
+  if (unlikely((dst->copy(dstcs, srccs, src, src_length, nchars, this))))
     return true; // EOM
-  if (const char *pos= well_formed_error_pos())
+  const char *pos;
+  if (unlikely(pos= well_formed_error_pos()))
   {
     ErrConvString err(pos, src_length - (pos - src), &my_charset_bin);
     push_warning_printf(m_thd, Sql_condition::WARN_LEVEL_WARN,
@@ -6716,7 +6718,7 @@ String_copier_for_item::copy_with_warn(CHARSET_INFO *dstcs, String *dst,
                         err.ptr());
     return false;
   }
-  if (const char *pos= cannot_convert_error_pos())
+  if (unlikely(pos= cannot_convert_error_pos()))
   {
     char buf[16];
     int mblen= my_charlen(srccs, pos, src + src_length);
@@ -7239,7 +7241,7 @@ Item_float::Item_float(THD *thd, const char *str_arg, size_t length):
   char *end_not_used;
   value= my_strntod(&my_charset_bin, (char*) str_arg, length, &end_not_used,
                     &error);
-  if (error)
+  if (unlikely(error))
   {
     char tmp[NAME_LEN + 1];
     my_snprintf(tmp, sizeof(tmp), "%.*s", (int)length, str_arg);
