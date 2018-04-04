@@ -55,6 +55,14 @@ bool With_clause::add_with_element(With_element *elem)
 }
 
 
+void  st_select_lex_unit::set_with_clause(With_clause *with_cl)
+{ 
+  with_clause= with_cl;
+  if (with_clause)
+    with_clause->set_owner(this);
+}
+
+
 /**
   @brief
     Check dependencies between tables defined in a list of with clauses
@@ -1081,25 +1089,19 @@ bool TABLE_LIST::set_as_with_table(THD *thd, With_element *with_elem)
   if (!with_elem->is_referenced() || with_elem->is_recursive)
   {
     derived= with_elem->spec;
-<<<<<<< HEAD
     if (derived != select_lex->master_unit() &&
         !is_with_table_recursive_reference())
     {
        derived->move_as_slave(select_lex);
     }
-=======
->>>>>>> Start point for attempts to solve subselect/dirived problem
   }
   else 
   {
     if(!(derived= with_elem->clone_parsed_spec(thd, this)))
       return true;
   }
-<<<<<<< HEAD
   derived->first_select()->linkage= DERIVED_TABLE_TYPE;
-=======
   select_lex->add_statistics(derived);
->>>>>>> Start point for attempts to solve subselect/dirived problem
   with_elem->inc_references();
   return false;
 }

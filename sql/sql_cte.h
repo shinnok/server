@@ -437,14 +437,6 @@ void With_element::prepare_for_next_iteration()
 
 
 inline
-void  st_select_lex_unit::set_with_clause(With_clause *with_cl)
-{ 
-  with_clause= with_cl;
-  if (with_clause)
-    with_clause->set_owner(this);
-}
-
-inline
 void With_clause::attach_to(st_select_lex *select_lex)
 {
   for (With_element *with_elem= with_list.first;

@@ -807,7 +807,7 @@ public:
   {
     return reinterpret_cast<st_select_lex*>(slave);
   }
-  inline void set_with_clause(With_clause *with_cl);
+  void set_with_clause(With_clause *with_cl);
   st_select_lex_unit* next_unit()
   {
     return reinterpret_cast<st_select_lex_unit*>(next);

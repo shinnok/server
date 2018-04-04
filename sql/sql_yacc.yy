@@ -907,7 +907,7 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
   Currently there are 96 shift/reduce conflicts.
   We should not introduce new conflicts any more.
 */
-%expect 96
+%expect 135
 
 /*
    Comments for TOKENS.
@@ -1854,11 +1854,6 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         join_table_list  join_table
         table_factor table_ref esc_table_ref
         table_primary_ident table_primary_derived
-        select_derived derived_table_list
-        select_derived_union
-        derived_simple_table
-        derived_query_specification
-        derived_table_value_constructor
         derived_table_list table_reference_list_parens
         nested_table_reference_list join_table_parens
 %type <date_time_type> date_time_type;
@@ -1898,24 +1893,16 @@ bool my_yyoverflow(short **a, YYSTYPE **b, size_t *yystacksize);
         UNDERSCORE_CHARSET
 
 %type <select_lex> subselect
-<<<<<<< HEAD
-        get_select_lex get_select_lex_derived
-        simple_table
-=======
->>>>>>> Start point for attempts to solve subselect/dirived problem
         query_specification
+        table_value_constructor
+        simple_table
         query_primary
         query_primary_parens
 
 %type <select_lex_unit>
         query_expression_body
-<<<<<<< HEAD
-        select_paren_derived
-        table_value_constructor
-=======
         query_expression
         query_expression_unit
->>>>>>> Start point for attempts to solve subselect/dirived problem
 
 %type <boolfunc2creator> comp_op
 
@@ -2812,18 +2799,6 @@ create:
           }
         | create_or_replace definer FUNCTION_SYM
           {
-<<<<<<< HEAD
-            Lex->create_info.set($1);
-          }
-          sf_tail_not_aggregate
-          { }
-        | create_or_replace definer AGGREGATE_SYM FUNCTION_SYM
-          {
-            Lex->create_info.set($1);
-          }
-          sf_tail_aggregate
-          { }
-=======
             if (Lex->main_select_push())
               MYSQL_YYABORT;
             Lex->create_info.set($1);
@@ -2832,7 +2807,17 @@ create:
           {
             Lex->pop_select(); //main select
           }
->>>>>>> Start point for attempts to solve subselect/dirived problem
+        | create_or_replace definer AGGREGATE_SYM FUNCTION_SYM
+          {
+            if (Lex->main_select_push())
+              MYSQL_YYABORT;
+            Lex->create_info.set($1);
+            
+          }
+          sf_tail_aggregate
+          {
+            Lex->pop_select(); //main select
+          }
         | create_or_replace no_definer FUNCTION_SYM
           {
             if (Lex->main_select_push())
@@ -2849,15 +2834,10 @@ create:
               MYSQL_YYABORT;
             Lex->create_info.set($1);
           }
-<<<<<<< HEAD
           create_aggregate_function_tail
-          { }
-=======
-          udf_tail
           {
             Lex->pop_select(); //main select
           }
->>>>>>> Start point for attempts to solve subselect/dirived problem
         | create_or_replace USER_SYM opt_if_not_exists clear_privileges grant_list
           opt_require_clause opt_resource_options
           {
@@ -4774,7 +4754,7 @@ sp_labeled_control:
               MYSQL_YYABORT;
           }
           while_body pop_sp_loop_label
-<<<<<<< HEAD
+
           { }
         | sp_label FOR_SYM
           {
@@ -4803,12 +4783,6 @@ sp_labeled_control:
               MYSQL_YYABORT;
           }
         | sp_label REPEAT_SYM
-=======
-          {
-            // while body pop main select
-          }
-        | label_ident ':' REPEAT_SYM
->>>>>>> Start point for attempts to solve subselect/dirived problem
           {
             if (Lex->sp_push_loop_label(thd, &$1))
               MYSQL_YYABORT;
@@ -5288,13 +5262,8 @@ create_like:
         ;
 
 opt_create_select:
-<<<<<<< HEAD
           /* empty */ {}
         | opt_duplicate opt_as create_select_query_expression opt_versioning_option
-=======
-          /* empty */ { }
-        | opt_duplicate opt_as create_select_query_expression
->>>>>>> Start point for attempts to solve subselect/dirived problem
         ;
 
 create_select_query_expression:
@@ -5419,12 +5388,8 @@ partition_entry:
               thd->parse_error(ER_PARTITION_ENTRY_ERROR);
               MYSQL_YYABORT;
             }
-<<<<<<< HEAD
-            DBUG_ASSERT(Lex->part_info->table);
-=======
             if (Lex->main_select_push())
               MYSQL_YYABORT;
->>>>>>> Start point for attempts to solve subselect/dirived problem
             /*
               We enter here when opening the frm file to translate
               partition info string into part_info data structure.
@@ -8246,33 +8211,18 @@ alter_commands:
           WITH TABLE_SYM table_ident have_partitioning
           {
             LEX *lex= thd->lex;
-<<<<<<< HEAD
-            lex->select_lex.db= $6->db;
-            if (lex->select_lex.db.str == NULL &&
-                lex->copy_db_to(&lex->select_lex.db))
-=======
-            size_t dummy;
-            lex->builtin_select.db=$6->db.str;
-            if (lex->builtin_select.db == NULL &&
-                lex->copy_db_to(&lex->builtin_select.db, &dummy))
->>>>>>> Start point for attempts to solve subselect/dirived problem
+            lex->builtin_select.db=$6->db;
+            if (lex->builtin_select.db.str == NULL &&
+                lex->copy_db_to(&lex->builtin_select.db))
             {
               MYSQL_YYABORT;
             }
             lex->name= $6->table;
-<<<<<<< HEAD
             lex->alter_info.partition_flags|= ALTER_PARTITION_EXCHANGE;
-            if (!lex->select_lex.add_table_to_list(thd, $6, NULL,
-                                                   TL_OPTION_UPDATING,
-                                                   TL_READ_NO_INSERT,
-                                                   MDL_SHARED_NO_WRITE))
-=======
-            lex->alter_info.flags|= Alter_info::ALTER_EXCHANGE_PARTITION;
             if (!lex->builtin_select.add_table_to_list(thd, $6, NULL,
                                                        TL_OPTION_UPDATING,
                                                        TL_READ_NO_INSERT,
                                                        MDL_SHARED_NO_WRITE))
->>>>>>> Start point for attempts to solve subselect/dirived problem
               MYSQL_YYABORT;
             DBUG_ASSERT(!lex->m_sql_cmd);
             lex->m_sql_cmd= new (thd->mem_root)
@@ -8517,16 +8467,9 @@ alter_list_item:
         | RENAME opt_to table_ident
           {
             LEX *lex=Lex;
-<<<<<<< HEAD
             lex->select_lex.db= $3->db;
-            if (lex->select_lex.db.str == NULL &&
-                lex->copy_db_to(&lex->select_lex.db))
-=======
-            size_t dummy;
-            lex->builtin_select.db=$3->db.str;
-            if (lex->builtin_select.db == NULL &&
-                lex->copy_db_to(&lex->builtin_select.db, &dummy))
->>>>>>> Start point for attempts to solve subselect/dirived problem
+            if (lex->builtin_select.db.str == NULL &&
+                lex->copy_db_to(&lex->builtin_select.db))
             {
               MYSQL_YYABORT;
             }
@@ -9271,27 +9214,6 @@ select:
             if (Lex->check_main_unit_semantics())
               MYSQL_YYABORT;
 
-<<<<<<< HEAD
-select_init:
-          SELECT_SYM select_options_and_item_list select_init3
-        | table_value_constructor
-        | table_value_constructor union_list
-        | table_value_constructor union_order_or_limit
-        | '(' select_paren ')'
-        | '(' select_paren ')' union_list
-        | '(' select_paren ')' union_order_or_limit
-        ;
-
-union_list_part2:
-          SELECT_SYM select_options_and_item_list select_init3_union_query_term
-        | table_value_constructor
-        | table_value_constructor union_list
-        | table_value_constructor union_order_or_limit
-        | '(' select_paren_union_query_term ')'
-        | '(' select_paren_union_query_term ')' union_list
-        | '(' select_paren_union_query_term ')' union_order_or_limit
-=======
-
             SELECT_LEX *fake= Lex->unit.fake_select_lex;
             if (fake)
             {
@@ -9302,28 +9224,37 @@ union_list_part2:
               Lex->push_select(Lex->first_select_lex());
             Lex->sql_command= SQLCOM_SELECT;
           }
->>>>>>> Start point for attempts to solve subselect/dirived problem
         ;
 
 
+simple_table:
+          query_specification      { $$= $1; }
+        | table_value_constructor  { $$= $1; }
+        ;
+        
+table_value_constructor:
+	  VALUES
+	  {
+	    LEX *lex=Lex;
+            lex->field_list.empty();
+            lex->many_values.empty();
+            lex->insert_list=0;
+	  }
+	  values_list
+	  { 
+	    LEX *lex=Lex;
+	    $$= lex->current_select;
+	    mysql_init_select(Lex);
+	    if (!($$->tvc=
+	          new (lex->thd->mem_root) table_value_constr(lex->many_values, $$, $$->options)))
+	      MYSQL_YYABORT;
+	    lex->many_values.empty();
+	  }
+	;
+	
 query_specification:
           SELECT_SYM
           {
-<<<<<<< HEAD
-            Lex->current_select->set_braces(true);
-          }
-          table_value_constructor
-          {
-            DBUG_ASSERT(Lex->current_select->braces);
-          }
-        |
-          {
-            /*
-              In order to correctly parse UNION's global ORDER BY we need to
-              set braces before parsing the clause.
-            */
-            Lex->current_select->set_braces(true);
-=======
             SELECT_LEX *sel;
             LEX *lex= Lex;
             if (!(sel= lex->alloc_select(TRUE)) ||
@@ -9331,7 +9262,6 @@ query_specification:
               MYSQL_YYABORT;
             sel->init_select();
             sel->braces= FALSE;
->>>>>>> Start point for attempts to solve subselect/dirived problem
           }
           select_options
           {
@@ -9359,7 +9289,7 @@ opt_from_clause:
 
 
 query_primary:
-          query_specification
+          simple_table
           { $$= $1; }
         | query_primary_parens
           { $$= $1; }
@@ -9381,24 +9311,7 @@ query_primary_parens:
             }
             Lex->push_select($2->fake_select_lex);
           }
-<<<<<<< HEAD
-          table_value_constructor
-          {
-            DBUG_ASSERT(Lex->current_select->braces);
-            $$= Lex->current_select->master_unit()->first_select();
-          }
-        |
-          {
-            Lex->current_select->set_braces(true);
-          }
-          SELECT_SYM select_part2_derived
-          opt_table_expression
-          opt_order_clause
-          opt_limit_clause
-          opt_select_lock_type
-=======
           query_expression_tail ')'
->>>>>>> Start point for attempts to solve subselect/dirived problem
           {
             Lex->pop_select();
             if ($4)
@@ -12269,31 +12182,20 @@ join_table_parens:
 
 
 table_primary_ident:
-          table_ident opt_use_partition opt_table_alias_clause opt_key_definition
+          table_ident opt_use_partition opt_for_system_time_clause
+          opt_table_alias_clause opt_key_definition
           {
-            DBUG_ASSERT(Select);
             SELECT_LEX *sel= Select;
             sel->table_join_options= 0;
-<<<<<<< HEAD
-          }
-          table_ident opt_use_partition opt_for_system_time_clause opt_table_alias opt_key_definition
-          {
-            if (!($$= Select->add_table_to_list(thd, $2, $5,
-=======
             if (!($$= Select->add_table_to_list(thd, $1, $3,
->>>>>>> Start point for attempts to solve subselect/dirived problem
                                                 Select->get_table_join_options(),
                                                 YYPS->m_lock_type,
                                                 YYPS->m_mdl_type,
                                                 Select->pop_index_hints(),
                                                 $2)))
               MYSQL_YYABORT;
-<<<<<<< HEAD
-            Select->add_joined_table($$);
-            if ($4)
+            if ($3)
               $$->vers_conditions= Lex->vers_conditions;
-=======
->>>>>>> Start point for attempts to solve subselect/dirived problem
           }
         ;
 
@@ -12315,15 +12217,7 @@ table_primary_ident:
 */
 
 table_primary_derived:
-<<<<<<< HEAD
-          '(' get_select_lex select_derived_union ')' opt_for_system_time_clause opt_table_alias
-          {
-            /* Use $2 instead of Lex->current_select as derived table will
-               alter value of Lex->current_select. */
-            if (!($3 || $6) && $2->embedding &&
-                !$2->embedding->nested_join->join_list.elements)
-=======
-          query_primary_parens table_alias_clause
+          query_primary_parens opt_for_system_time_clause table_alias_clause
           {
             LEX *lex=Lex;
             lex->derived_tables|= DERIVED_SUBQUERY;
@@ -12334,148 +12228,11 @@ table_primary_derived:
             DBUG_ASSERT(Lex->current_select == curr_sel);
             SELECT_LEX_UNIT *unit= $1->master_unit();
             if (!unit)
->>>>>>> Start point for attempts to solve subselect/dirived problem
             {
               unit= Lex->create_unit($1);
               if (!unit)
                 YYABORT;
             }
-<<<<<<< HEAD
-            else if (!$3)
-            {
-              /* Handle case of derived table, alias may be NULL if there
-                 are no outer parentheses, add_table_to_list() will throw
-                 error in this case */
-              LEX *lex=Lex;
-              lex->check_automatic_up(UNSPECIFIED_TYPE);
-              SELECT_LEX *sel= lex->current_select;
-              SELECT_LEX_UNIT *unit= sel->master_unit();
-              lex->current_select= sel= unit->outer_select();
-              Table_ident *ti= new (thd->mem_root) Table_ident(unit);
-              if (ti == NULL)
-                MYSQL_YYABORT;
-              if (!($$= sel->add_table_to_list(thd,
-                                               ti, $6, 0,
-                                               TL_READ, MDL_SHARED_READ)))
-
-                MYSQL_YYABORT;
-              sel->add_joined_table($$);
-              lex->pop_context();
-              lex->nest_level--;
-            }
-            else if ($6 != NULL)
-            {
-              /*
-                Tables with or without joins within parentheses cannot
-                have aliases, and we ruled out derived tables above.
-              */
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-            else
-            {
-              /* nested join: FROM (t1 JOIN t2 ...),
-                 nest_level is the same as in the outer query */
-              $$= $3;
-            }
-            /*
-              Fields in derived table can be used in upper select in
-              case of merge. We do not add HAVING fields because we do
-              not merge such derived. We do not add union because
-              also do not merge them
-            */
-            if ($$ && $$->derived &&
-                !$$->derived->first_select()->next_select())
-              $$->select_lex->add_where_field($$->derived->first_select());
-            if ($5)
-            {
-              MYSQL_YYABORT_UNLESS(!$3);
-              $$->vers_conditions= Lex->vers_conditions;
-            }
-          }
-          /* Represents derived table with WITH clause */
-        | '(' get_select_lex subselect_start
-              with_clause query_expression_body
-              subselect_end ')' opt_for_system_time_clause opt_table_alias
-          {
-            LEX *lex=Lex;
-            SELECT_LEX *sel= $2;
-            SELECT_LEX_UNIT *unit= $5->master_unit();
-            Table_ident *ti= new (thd->mem_root) Table_ident(unit);
-            if (ti == NULL)
-              MYSQL_YYABORT;
-            $5->set_with_clause($4);
-            lex->current_select= sel;
-            if (!($$= sel->add_table_to_list(lex->thd,
-                                             ti, $9, 0,
-                                             TL_READ, MDL_SHARED_READ)))
-              MYSQL_YYABORT;
-            sel->add_joined_table($$);
-            if ($8)
-              $$->vers_conditions= Lex->vers_conditions;
-          } 
-        ;
-
-/*
-  This rule accepts just about anything. The reason is that we have
-  empty-producing rules in the beginning of rules, in this case
-  subselect_start. This forces bison to take a decision which rules to
-  reduce by long before it has seen any tokens. This approach ties us
-  to a very limited class of parseable languages, and unfortunately
-  SQL is not one of them. The chosen 'solution' was this rule, which
-  produces just about anything, even complete bogus statements, for
-  instance ( table UNION SELECT 1 ).
-  Fortunately, we know that the semantic value returned by
-  select_derived is NULL if it contained a derived table, and a pointer to
-  the base table's TABLE_LIST if it was a base table. So in the rule
-  regarding union's, we throw a parse error manually and pretend it
-  was bison that did it.
- 
-  Also worth noting is that this rule concerns query expressions in
-  the from clause only. Top level select statements and other types of
-  subqueries have their own union rules.
-*/
-select_derived_union:
-          select_derived
-        | select_derived union_order_or_limit
-          {
-            if ($1)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-          }
-        | select_derived union_head_non_top
-          {
-            if ($1)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-          }
-          union_list_derived_part2
-        | derived_simple_table opt_select_lock_type
-        | derived_simple_table order_or_limit opt_select_lock_type
-        | derived_simple_table opt_select_lock_type union_list_derived
-       ;
-
-union_list_derived_part2:
-         query_term_union_not_ready { Lex->pop_context(); }
-       | query_term_union_ready     { Lex->pop_context(); }
-       | query_term_union_ready     { Lex->pop_context(); } union_list_derived
-       ;
-
-union_list_derived:
-         union_head_non_top union_list_derived_part2
-       ;
-
-
-/* The equivalent of select_init2 for nested queries. */
-select_init2_derived:
-          select_part2_derived
-          {
-            Select->set_braces(0);
-=======
             curr_sel->register_unit(unit, &curr_sel->context);
             curr_sel->add_statistics(unit);
 
@@ -12483,83 +12240,23 @@ select_init2_derived:
             if (ti == NULL)
               MYSQL_YYABORT;
             if (!($$= curr_sel->add_table_to_list(lex->thd,
-                                                  ti, $2, 0,
+                                                  ti, $3, 0,
                                                   TL_READ, MDL_SHARED_READ)))
               MYSQL_YYABORT;
->>>>>>> Start point for attempts to solve subselect/dirived problem
+            if ($2)
+            {
+              $$->vers_conditions= Lex->vers_conditions;
+            }
           }
         | '('
           query_expression
-          ')' table_alias_clause
+          ')' opt_for_system_time_clause table_alias_clause
           {
             LEX *lex=Lex;
             lex->derived_tables|= DERIVED_SUBQUERY;
             $2->first_select()->linkage= DERIVED_TABLE_TYPE;
 
 
-<<<<<<< HEAD
-derived_simple_table:
-          derived_query_specification     { $$= $1; }
-        | derived_table_value_constructor { $$= $1; }
-        ;
-/*
-  Similar to query_specification, but for derived tables.
-  Example: the inner parenthesized SELECT in this query:
-    SELECT * FROM (SELECT * FROM t1);
-*/
-derived_query_specification:
-          SELECT_SYM select_derived_init select_derived2
-          {
-            if ($2)
-              Select->set_braces(1);
-            $$= NULL;
-          }
-        ;
-
-derived_table_value_constructor:
-          VALUES
-          {
-	    LEX *lex=Lex;
-            lex->field_list.empty();
-            lex->many_values.empty();
-            lex->insert_list=0;
-	  }
-          values_list
-          {
-            LEX *lex= Lex;
-            lex->derived_tables|= DERIVED_SUBQUERY;
-            if (!lex->expr_allows_subselect ||
-                lex->sql_command == (int)SQLCOM_PURGE)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-            if (lex->current_select->linkage == GLOBAL_OPTIONS_TYPE ||
-                mysql_new_select(lex, 1, NULL))
-              MYSQL_YYABORT;
-            mysql_init_select(lex);
-            lex->current_select->linkage= DERIVED_TABLE_TYPE;
-
-            if (!(lex->current_select->tvc=
-	          new (lex->thd->mem_root) table_value_constr(lex->many_values,
-							      lex->current_select,
-							      lex->current_select->options)))
-	      MYSQL_YYABORT;
-	    lex->many_values.empty();
-            $$= NULL;
-          }
-        ;
-
-
-select_derived2:
-          {
-            LEX *lex= Lex;
-            lex->derived_tables|= DERIVED_SUBQUERY;
-            if (!lex->expr_allows_subselect ||
-                lex->sql_command == (int)SQLCOM_PURGE)
-            {
-              thd->parse_error();
-=======
             // Add the subtree of subquery to the current SELECT_LEX
             SELECT_LEX *curr_sel= Lex->select_stack_head();
             DBUG_ASSERT(Lex->current_select == curr_sel);
@@ -12568,12 +12265,15 @@ select_derived2:
 
             Table_ident *ti= new (thd->mem_root) Table_ident($2);
             if (ti == NULL)
->>>>>>> Start point for attempts to solve subselect/dirived problem
               MYSQL_YYABORT;
             if (!($$= curr_sel->add_table_to_list(lex->thd,
-                                                  ti, $4, 0,
+                                                  ti, $5, 0,
                                                   TL_READ, MDL_SHARED_READ)))
               MYSQL_YYABORT;
+            if ($4)
+            {
+              $$->vers_conditions= Lex->vers_conditions;
+            }
           }
         ;
 
@@ -12709,15 +12409,12 @@ table_alias:
 
 opt_table_alias_clause:
           /* empty */ { $$=0; }
-<<<<<<< HEAD
-        | table_alias ident_table_alias
-=======
+
         | table_alias_clause { $$= $1; }
         ;
 
 table_alias_clause:
-          table_alias ident
->>>>>>> Start point for attempts to solve subselect/dirived problem
+          table_alias ident_table_alias
           {
             $$= (LEX_CSTRING*) thd->memdup(&$2,sizeof(LEX_STRING));
             if ($$ == NULL)
@@ -13811,13 +13508,7 @@ fields:
 
 
 insert_values:
-          VALUES
-          { Lex->current_select->parsing_place= NO_MATTER; }
-          values_list {}
-        | VALUE_SYM
-          { Lex->current_select->parsing_place= NO_MATTER; }
-          values_list {}
-        | create_select_query_expression {}
+         create_select_query_expression {}
         ;
 
 values_list:
@@ -13943,11 +13634,7 @@ update:
             {
               /* it is single table update and it is update of derived table */
               my_error(ER_NON_UPDATABLE_TABLE, MYF(0),
-<<<<<<< HEAD
                        lex->select_lex.get_table_list()->alias.str, "UPDATE");
-=======
-                       lex->builtin_select.get_table_list()->alias, "UPDATE");
->>>>>>> Start point for attempts to solve subselect/dirived problem
               MYSQL_YYABORT;
             }
             /*
@@ -14050,7 +13737,6 @@ delete_single_table:
             YYPS->m_lock_type= TL_READ_DEFAULT;
             YYPS->m_mdl_type= MDL_SHARED_READ;
           }
-<<<<<<< HEAD
         ;
 
 single_multi:
@@ -14058,17 +13744,12 @@ single_multi:
           opt_where_clause
           opt_order_clause
           delete_limit_clause
-          opt_select_expressions {}
-=======
-          opt_where_clause opt_order_clause
-          delete_limit_clause {}
-          opt_select_expressions
+          opt_select_expressions 
           {
-            if ($6)
-              Select->order_list= *($6);
+            if ($3)
+              Select->order_list= *($3);
             Lex->pop_select(); //main select
           }
->>>>>>> Start point for attempts to solve subselect/dirived problem
         | table_wild_list
           {
             if (Lex->main_select_push())
@@ -14279,11 +13960,7 @@ show_param:
            {
              LEX *lex= Lex;
              lex->sql_command= SQLCOM_SHOW_TABLES;
-<<<<<<< HEAD
              lex->select_lex.db= $3;
-=======
-             lex->builtin_select.db= $3.str;
->>>>>>> Start point for attempts to solve subselect/dirived problem
              if (prepare_schema_table(thd, lex, 0, SCH_TABLE_NAMES))
                MYSQL_YYABORT;
            }
@@ -14291,11 +13968,7 @@ show_param:
            {
              LEX *lex= Lex;
              lex->sql_command= SQLCOM_SHOW_TRIGGERS;
-<<<<<<< HEAD
              lex->select_lex.db= $3;
-=======
-             lex->builtin_select.db= $3.str;
->>>>>>> Start point for attempts to solve subselect/dirived problem
              if (prepare_schema_table(thd, lex, 0, SCH_TRIGGERS))
                MYSQL_YYABORT;
            }
@@ -14303,11 +13976,7 @@ show_param:
            {
              LEX *lex= Lex;
              lex->sql_command= SQLCOM_SHOW_EVENTS;
-<<<<<<< HEAD
              lex->select_lex.db= $2;
-=======
-             lex->builtin_select.db= $2.str;
->>>>>>> Start point for attempts to solve subselect/dirived problem
              if (prepare_schema_table(thd, lex, 0, SCH_EVENTS))
                MYSQL_YYABORT;
            }
@@ -14315,11 +13984,7 @@ show_param:
            {
              LEX *lex= Lex;
              lex->sql_command= SQLCOM_SHOW_TABLE_STATUS;
-<<<<<<< HEAD
              lex->select_lex.db= $3;
-=======
-             lex->builtin_select.db= $3.str;
->>>>>>> Start point for attempts to solve subselect/dirived problem
              if (prepare_schema_table(thd, lex, 0, SCH_TABLES))
                MYSQL_YYABORT;
            }
@@ -14327,11 +13992,7 @@ show_param:
           {
             LEX *lex= Lex;
             lex->sql_command= SQLCOM_SHOW_OPEN_TABLES;
-<<<<<<< HEAD
             lex->select_lex.db= $3;
-=======
-            lex->builtin_select.db= $3.str;
->>>>>>> Start point for attempts to solve subselect/dirived problem
             if (prepare_schema_table(thd, lex, 0, SCH_OPEN_TABLES))
               MYSQL_YYABORT;
           }
@@ -14736,11 +14397,7 @@ describe:
             mysql_init_select(lex);
             lex->current_select->parsing_place= SELECT_LIST;
             lex->sql_command= SQLCOM_SHOW_FIELDS;
-<<<<<<< HEAD
             lex->select_lex.db= null_clex_str;
-=======
-            lex->builtin_select.db= 0;
->>>>>>> Start point for attempts to solve subselect/dirived problem
             lex->verbose= 0;
             if (prepare_schema_table(thd, lex, $2, SCH_COLUMNS))
               MYSQL_YYABORT;
@@ -14824,7 +14481,7 @@ flush:
             lex->type= 0;
             lex->no_write_to_binlog= $2;
           }
-          flush_options
+          flush_options {}
         ;
 
 flush_options:
@@ -17666,132 +17323,6 @@ union_option:
         | ALL       { $$=0; }
         ;
 
-<<<<<<< HEAD
-simple_table:
-          query_specification      { $$= $1; }
-        | table_value_constructor  { $$= $1; }
-        ;
-        
-table_value_constructor:
-	  VALUES
-	  {
-	    LEX *lex=Lex;
-            lex->field_list.empty();
-            lex->many_values.empty();
-            lex->insert_list=0;
-	  }
-	  values_list
-	  { 
-	    LEX *lex=Lex;
-	    $$= lex->current_select;
-	    mysql_init_select(Lex);
-	    if (!($$->tvc=
-	          new (lex->thd->mem_root) table_value_constr(lex->many_values, $$, $$->options)))
-	      MYSQL_YYABORT;
-	    lex->many_values.empty();
-	  }
-	;
-	
-/*
-  Corresponds to the SQL Standard
-  <query specification> ::=
-    SELECT [ <set quantifier> ] <select list> <table expression>
-
-  Notes:
-  - We allow more options in addition to <set quantifier>
-  - <table expression> is optional in MariaDB
-*/
-query_specification:
-          SELECT_SYM select_init2_derived opt_table_expression
-          {
-            $$= Lex->current_select->master_unit()->first_select();
-          }
-        ;
-
-query_term_union_not_ready:
-          simple_table order_or_limit opt_select_lock_type { $$= $1; }
-        | '(' select_paren_derived ')' union_order_or_limit       { $$= $2; }
-        ;
-
-query_term_union_ready:
-          simple_table opt_select_lock_type                { $$= $1; }
-        | '(' select_paren_derived ')'                            { $$= $2; }
-        ;
-
-query_expression_body:
-          query_term_union_not_ready                                { $$= $1; }
-        | query_term_union_ready                                    { $$= $1; }
-        | query_term_union_ready union_list_derived                 { $$= $1; }
-        ;
-
-/* Corresponds to <query expression> in the SQL:2003 standard. */
-subselect:
-          subselect_start opt_with_clause query_expression_body subselect_end
-          { 
-            $3->set_with_clause($2);
-            $$= $3;
-          }
-        ;
-
-subselect_start:
-          {
-            LEX *lex=Lex;
-            if (!lex->expr_allows_subselect ||
-               lex->sql_command == (int)SQLCOM_PURGE)
-            {
-              thd->parse_error();
-              MYSQL_YYABORT;
-            }
-            /* 
-              we are making a "derived table" for the parenthesis
-              as we need to have a lex level to fit the union 
-              after the parenthesis, e.g. 
-              (SELECT .. ) UNION ...  becomes 
-              SELECT * FROM ((SELECT ...) UNION ...)
-            */
-            if (mysql_new_select(Lex, 1, NULL))
-              MYSQL_YYABORT;
-          }
-        ;
-
-subselect_end:
-          {
-            LEX *lex=Lex;
-
-            lex->check_automatic_up(UNSPECIFIED_TYPE);
-            lex->pop_context();
-            SELECT_LEX *child= lex->current_select;
-            lex->current_select = lex->current_select->return_after_parsing();
-            lex->nest_level--;
-            lex->current_select->n_child_sum_items += child->n_sum_items;
-            /*
-              A subselect can add fields to an outer select. Reserve space for
-              them.
-            */
-            lex->current_select->select_n_where_fields+=
-            child->select_n_where_fields;
-
-            /*
-              Aggregate functions in having clause may add fields to an outer
-              select. Count them also.
-            */
-            lex->current_select->select_n_having_items+=
-            child->select_n_having_items;
-          }
-        ;
-
-opt_query_expression_options:
-          /* empty */
-        | query_expression_option_list
-        ;
-
-query_expression_option_list:
-          query_expression_option_list query_expression_option
-        | query_expression_option
-        ;
-
-=======
->>>>>>> Start point for attempts to solve subselect/dirived problem
 query_expression_option:
           STRAIGHT_JOIN { Select->options|= SELECT_STRAIGHT_JOIN; }
         | HIGH_PRIORITY
@@ -17896,49 +17427,24 @@ view_select:
           view_check_option
           {
             LEX *lex= Lex;
-<<<<<<< HEAD
-=======
             SQL_I_List<TABLE_LIST> *save= &lex->first_select_lex()->table_list;
             lex->set_main_unit($2);
             if (lex->check_main_unit_semantics())
               MYSQL_YYABORT;
             lex->first_select_lex()->table_list.push_front(save);
             lex->current_select= Lex->first_select_lex();
->>>>>>> Start point for attempts to solve subselect/dirived problem
             size_t len= YYLIP->get_cpp_ptr() - lex->create_view->select.str;
             void *create_view_select= thd->memdup(lex->create_view->select.str, len);
             lex->create_view->select.length= len;
             lex->create_view->select.str= (char *) create_view_select;
             uint not_used;
             trim_whitespace(thd->charset(),
-<<<<<<< HEAD
-                            &lex->create_view->select);
-            lex->create_view->check= $4;
-=======
                             &lex->create_view->select, &not_used);
             lex->create_view->check= $3;
->>>>>>> Start point for attempts to solve subselect/dirived problem
             lex->parsing_options.allows_variable= TRUE;
           }
         ;
 
-/*
-  SQL Standard <query expression body> for VIEWs.
-  Does not include INTO and PROCEDURE clauses.
-*/
-<<<<<<< HEAD
-query_expression_body_view:
-          SELECT_SYM select_options_and_item_list select_init3_view
-        | table_value_constructor
-        | table_value_constructor union_order_or_limit
-        | table_value_constructor union_list_view
-        | '(' select_paren_view ')'
-        | '(' select_paren_view ')' union_order_or_limit
-        | '(' select_paren_view ')' union_list_view
-        ;
-
-=======
->>>>>>> Start point for attempts to solve subselect/dirived problem
 view_check_option:
           /* empty */                     { $$= VIEW_CHECK_NONE; }
         | WITH CHECK_SYM OPTION           { $$= VIEW_CHECK_CASCADED; }
